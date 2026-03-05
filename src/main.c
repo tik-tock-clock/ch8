@@ -7,8 +7,12 @@ int main(int argc, char* argv[])
     {
         printf("Error initializing SDL: %s\n", SDL_GetError());
     }
-    
-    SDL_Window* window = SDL_CreateWindow("chip8 emu", 500, 500, 640, 320, 0);
+
+    SDL_Renderer* renderer;
+    SDL_Window* window = SDL_CreateWindow("chip8 emu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 320, 0);
+    SDL_RenderSetLogicalSize(renderer, 64, 32);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
     int close = 0;
 
     while(!close)
