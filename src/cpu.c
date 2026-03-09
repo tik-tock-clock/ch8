@@ -187,7 +187,27 @@ void chip8Cycle(Chip8 *chip)
 
                 case 0x0001:
                     //Set Vx to Vx OR Vy as a bitwise operation
-                    chip->
-            }
+                    chip->Vregisters[vx] = chip->Vregisters[vx] | chip->Vregisters[vy];
+                    break;
+
+                case 0x0002:
+                    //Set Vx to Vx AND Vy as a bitwise operation
+                    chip->Vregisters[vx] = chip->Vregisters[vx] & chip->Vregisters[vy];
+                    break;
+
+                case 0x0003:
+                    //Set Vx to Vx XOR vy as a bitwise operation
+                    chip->Vregisters[vx] = chip->Vregisters[vx] ^ chip->Vregisters[vy];
+                    break;
+
+                case 0x0004:
+                    //Vx and Vy are added together
+                    //If result is greater than 8 bits VF is sent to 1, otherwise 0
+                    //Only lowest 8 bits of result are kept in Vx
+                    uint16_t result = chip->Vregisters[vx] + chip->Vregisters[vy];
+                    uint8_t overflow = result > 0xFF ? 1 : 0;
+                    chip->Vregisters[vx] = result & 0xFF;
+                    chip->Vregisters[0xF] = overflow;
+            }  
     }
 }
