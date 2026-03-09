@@ -68,7 +68,7 @@ void init(Chip8 *chip)
     }
 }
 
-int loadRom(const char* romPath)
+int loadRom(const char* romPath, Chip8 *chip)
 {
     //Open the File and check if the File is opened successfully
     FILE* rom = fopen(romPath, "rb");
@@ -94,14 +94,100 @@ int loadRom(const char* romPath)
     }
 
     //Copy the rom into the buffer
-    size_t data = fread(romBuffer, sizeof(char), (size_t)romSize, rom);
-    if (data != romSize){
+    size_t romData = fread(romBuffer, sizeof(char), (size_t)romSize, rom);
+    if (romData != romSize){
         printf("ERROR: Failed to read ROM!\n");
         return 0;
     }
+
+    //Copy buffer to Chip8 memory
+    if ((4096-512) > romSize){
+        memcpy(chip->memory[512], romData, romSize);
+    }
+
+    fclose(rom);
+    free(romBuffer);
 }
 
-int main(int argc, const char* argv[])
+void chip8Cycle(Chip8 *chip) 
 {
-    return 0;
+    //Fetch opcode from memory
+    uint16_t opcode = chip->memory[chip->programCounter] << 8 | chip->memory[chip->programCounter+1];
+    chip->programCounter += 2;
+
+    //collect vx and vy from opcode
+    uint16_t vx = (opcode & 0x0F00) >> 8;
+    uint16_t vy = (opcode & 0x00F0) >> 4;
+
+    switch (opcode & 0xF000)
+    {
+        case 0x0000:
+            switch (opcode & 0x00FF)
+            {
+                case 0x00E0:
+                    //Clear the screen
+                    memset(chip->display, 0, sizeof(chip->display));
+                    break;
+
+                case 0x00EE:
+                    //Return from suboutine
+                    --chip->stackPointer;
+                    chip->programCounter = chip->stack[chip->stackPointer];
+                    break;
+            }
+
+        case 0x1000:
+            //Jump to address NNN
+            chip->programCounter = opcode & 0x0FFF;
+
+        case 0x2000:
+            //Execute subroutine at NNN
+            chip->stackPointer++;
+            chip->stack[chip->stackPointer] = chip->programCounter;
+            chip->programCounter = opcode & 0xFFF;
+
+        case 0x3000:
+            //Skip next instruction if register Vx is equal to kk
+            if (chip->Vregisters[vx] == (opcode & 0x00FF)){
+                chip->programCounter += 2;
+            }
+            break;
+
+        case 0x4000:
+            //Skip next instruction if Vx is not equal to kk
+            if (chip->Vregisters[vx] != (opcode & 0x00FF)){
+                chip->programCounter += 2;
+            }
+            break;
+
+        case 0x5000:
+            //Skip next instruciton if Vx is equal to Vy
+            if (chip->Vregisters[vx] == chip->Vregisters[vy]){
+                chip->programCounter += 2;
+            } 
+            break;
+
+        case 0x6000:
+            //Set Vx to kk
+            chip->Vregisters[vx] = (opcode & 0x00FF);
+            break;
+
+        case 0x7000:
+            //Add kk to Vx
+            chip->Vregisters[vx] += (opcode & 0x00FF);
+            break;
+
+        case 0x8000:
+            switch (opcode * 0x000F)
+            {
+                case 0x0000:
+                    //Set Vx to Vy
+                    chip->Vregisters[vx] = chip->Vregisters[vy];
+                    break;
+
+                case 0x0001:
+                    //Set Vx to Vx OR Vy as a bitwise operation
+                    chip->
+            }
+    }
 }
