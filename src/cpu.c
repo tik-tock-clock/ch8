@@ -266,5 +266,8 @@ void chip8Cycle(Chip8 *chip)
             //Set Vx to bitwise random number AND NN
             chip->Vregisters[vx] = rand() & (opcode & 0x00FF);
             break;
+
+        case 0xD000:
+            //Draw Sprite at coords; (Vx, Vy)
     }
 }
