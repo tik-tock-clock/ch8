@@ -257,6 +257,14 @@ void chip8Cycle(Chip8 *chip)
             chip->indexRegister = (opcode & 0x0FFF);
             break;
                 
-              
+        case 0xB000:
+            //Jump to address NNN plus V0
+            chip->programCounter = chip->Vregisters[0] + (opcode & 0x0FFF);
+            break; 
+
+        case 0xC000:
+            //Set Vx to bitwise random number AND NN
+            chip->Vregisters[vx] = rand() & (opcode & 0x00FF);
+            break;
     }
 }
