@@ -208,6 +208,55 @@ void chip8Cycle(Chip8 *chip)
                     uint8_t overflow = result > 0xFF ? 1 : 0;
                     chip->Vregisters[vx] = result & 0xFF;
                     chip->Vregisters[0xF] = overflow;
-            }  
+                    break;
+
+                case 0x0005:
+                    //If Vx is greater than Vy, VF is set to 1, otherwise 0
+                    //Vy is subtracted from Vx, results stored in vx
+                    uint16_t result = chip->Vregisters[vx] - chip->Vregisters[vy];
+                    uint8_t overflow = chip->Vregisters[vx] >= chip->Vregisters[vy] ? 1 : 0;
+                    chip->Vregisters[vx] = result & 0xFF;
+                    chip->Vregisters[0xF] = overflow;
+                    break;
+
+                case 0x0006:
+                    //Shift Vx to right by 1 bit 
+                    //Store least significant bit in VF
+                    uint8_t overflow = chip->Vregisters[vx] & 0x1;
+                    chip->Vregisters[vx] >>= 1;
+                    chip->Vregisters[0xF] = overflow;
+                    break;
+
+                case 0x0007:
+                    //Vx is set to Vy - Vx
+                    //If there is an overflow VF is set to 1, otherwise is set to 0
+                    uint16_t result = chip->Vregisters[vy] - chip->Vregisters[vx];
+                    uint8_t overflow = chip->Vregisters[vx] > 0xFF ? 1 : 0;
+                    chip->Vregisters[vx] = result && 0xFF;
+                    chip->Vregisters[0xF] = overflow;
+                    break;
+
+                case 0x000E:
+                    //Shift Vx to left by 1
+                    //Store most significant bit in VF 
+                    uint8_t oveflow = chip->Vregisters[vx] >> 7;
+                    chip->Vregisters[vx] <<= 1;
+                    chip->Vregisters[0xF] = overflow;
+                    break;
+            }
+
+        case 0x9000:
+                //Skip next instruction if Vx isn't equal to Vy
+                if (chip->Vregisters[vx] != chip->Vregisters[vy]){
+                    chip->programCounter += 2;
+                } 
+                break;
+
+        case 0xA000:
+            //Sets Index register to NNN
+            chip->indexRegister = (opcode & 0x0FFF);
+            break;
+                
+              
     }
 }
