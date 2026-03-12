@@ -4,7 +4,7 @@ LIBS=-lSDL2
 BUILD_DIR=build
 PROJECT=ch8
 
-FILES = src/main.c
+FILES = src/main.c src/cpu.c
 
 all:
 

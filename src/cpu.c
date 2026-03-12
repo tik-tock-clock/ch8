@@ -42,7 +42,7 @@ typedef struct
     uint8_t keypad[16];
 }Chip8;
 
-void init(Chip8 *chip)
+void initChip8(Chip8 *chip)
 {
     //Reset Program Counter to 0x200
     chip->programCounter = 0x200;
