@@ -31,6 +31,7 @@ typedef struct
 
     //Timers
     uint8_t delayTimer;
+    uint8_t soundTimer;
 
     //The stack
     uint16_t stack[16];
@@ -61,11 +62,41 @@ void init(Chip8 *chip)
 
     //Reset Timer
     chip->delayTimer = 0;
+    chip->soundTimer = 0;
 
     //Load Fontset to beginning of memory
     for (int i=0; i<80; i++) {
         chip->memory[0x50 + i] = Chip8FontSet[i];
     }
+}
+
+void draw(Chip8* chip, uint16_t opcode, uint8_t vx, uint8_t vy)
+{
+    //DXYN
+    //Draw sprite at coordinates (Vx, Vy) with width of 8 pixels and height of N+1 pixels
+    //If any pixels are flipped from 1 to 0, VF is set to , otherwise 0
+    //Each row of pixels is read as bit-coded from memory location I
+    //I doesn't change after execution
+    uint8_t spriteX = chip->Vregisters[vx];
+    uint8_t spriteY = chip->Vregisters[vy];
+    uint8_t spriteHeight = (opcode & 0x000F) + 1;
+    uint8_t spriteRow;
+
+    for(int y=0; y<spriteHeight; y++){
+        spriteRow = chip->memory[chip->indexRegister + y];
+        for (int x=0; x<=8; x++){
+            int currentPixelAddress = ((spriteY + y) * (64*32) + spriteX + x) % (64*32);
+
+            if (chip->display[currentPixelAddress] == 1){
+                chip->Vregisters[0xF] = 1;
+            } else {
+                chip->Vregisters[0xF] = 0;
+            }
+
+            chip->display[currentPixelAddress] ^= 1;
+        }
+    }
+
 }
 
 int loadRom(const char* romPath, Chip8 *chip)
@@ -107,6 +138,15 @@ int loadRom(const char* romPath, Chip8 *chip)
 
     fclose(rom);
     free(romBuffer);
+}
+
+void updateTimes(Chip8* chip)
+{
+    if(chip->delayTimer > 0){
+        chip->delayTimer--;
+    } if(chip->soundTimer > 0){
+        chip->soundTimer--;
+    }
 }
 
 void chip8Cycle(Chip8 *chip) 
@@ -269,5 +309,55 @@ void chip8Cycle(Chip8 *chip)
 
         case 0xD000:
             //Draw Sprite at coords; (Vx, Vy)
+            draw(chip, opcode, vx, vy);
+            break;
+
+        case 0xE000:
+            switch (opcode & 0x00FF)
+            {
+                case 0x009E:
+                    //Skip next instruction if key stored in Vx is pressed
+                    if(chip->keypad[chip->Vregisters[vx]]){
+                        chip->programCounter += 2;
+                    }
+                    break;
+
+                case 0x00A1:
+                    //Skip next instruction if key stored in Vx isn't pressed
+                    if (!(chip->keypad[chip->Vregisters[vx]])){
+                        chip->programCounter += 2;
+                    }
+                    break;
+            }
+
+        case 0xF000:
+            switch (opcode & 0x00FF)
+            {
+                case 0x0007:
+                    //Set Vx to delay timer
+                    chip->Vregisters[vx] = chip->delayTimer;
+                    break;
+                
+                case 0x000A:
+                    //Await key press and store it in Vx
+                    int keypress = 0;
+                    for (int i=0; i<=16; i++){
+                        if (chip->keypad[i-1] != 0){
+                            chip->Vregisters[vx] = i-1;
+                            keypress = 1;
+                            break;
+                        }
+                    }
+                    if(!keypress){
+                        chip->programCounter -= 2;
+                    }
+
+                case 0x0015:
+                    //Set delay timer to Vx
+                    chip->delayTimer = chip->Vregisters[vx];
+                    break;
+
+                
+            }
     }
 }
