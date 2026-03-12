@@ -357,7 +357,47 @@ void chip8Cycle(Chip8 *chip)
                     chip->delayTimer = chip->Vregisters[vx];
                     break;
 
-                
+                case 0x0018:
+                    //Set sound timer to Vx
+                    chip->soundTimer = chip->Vregisters[vx];
+                    break;
+
+                case 0x001E:
+                    //Add Vx to I, VF isn't affected
+                    chip->indexRegister += chip->Vregisters[vx];
+
+                case 0x0029:
+                    //Set I to location of sprite in Vx
+                    chip->indexRegister = chip->Vregisters[vx] * 5 + 0x10;
+                    break;
+
+                case 0x0033:
+                    //Take decimal representation of Vx
+                    //Store hundreds digit in memory at I
+                    //Store tens digit in memory at I+1
+                    //Store ones igit in memory at I+2
+                    chip->memory[chip->indexRegister] = chip->Vregisters[vx] / 100;
+                    chip->memory[chip->indexRegister+1] = (chip->Vregisters[vx] / 10) % 10;
+                    chip->memory[chip->indexRegister+2] = (chip->Vregisters[vx] % 100) % 10;
+                    break;
+                    
+                case 0x0055:
+                    //Stores from V0 to Vx(inclusive) in memory, from address I
+                    //I offset is increased by 1 for each value written
+                    for (int i=0; i<=vx; i++){
+                        chip->memory[chip->indexRegister+i] = chip->Vregisters[i];
+                    }
+                    break;
+
+                case 0x0065:
+                    //Fills from V0 to Vx(inclusive) from memory, from address I plus offset
+                    //I offset is increased by 1 for each value loaded
+                    for (int i=0; i<=vx; i++){
+                        chip->Vregisters[i] = chip->memory[chip->indexRegister+i];
+                    }
             }
+            break;
+        default:
+            printf("ERROR: Unknown opcode [0x0000]: 0x%X\n", opcode);
     }
-}
+};
